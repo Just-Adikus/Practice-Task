@@ -3,6 +3,8 @@ import 'dart:developer';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:practice_7/bloc/register_cubit.dart';
 import 'package:practice_7/model/user.dart';
 import 'package:practice_7/views/user_screen.dart';
 import 'package:practice_7/generated/locale_keys.g.dart';
@@ -59,13 +61,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      key: _scaffoldKey,
-      appBar: AppBar(
-        title: Text("Register Form"),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
+    return BlocProvider(
+      create: (context) => RegisterCubit(),
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text("Register Form"),
+          centerTitle: true,
+        ),
+      body: 
+      BlocBuilder<RegisterCubit, RegistrationStatus>(
+          builder: (context, state) {
+            if (state == RegistrationStatus.loading) {
+              return Center(child: CircularProgressIndicator());
+            } else if (state == RegistrationStatus.success) {
+              return Center(child: Text("Registration successful"));
+            } else if (state == RegistrationStatus.error) {
+              return Center(child: Text("Registration failed"));
+            } else {
+        return SingleChildScrollView(
         child:Padding(
         padding: EdgeInsets.all(10),
         child:Form(
@@ -254,26 +267,38 @@ class _RegisterScreenState extends State<RegisterScreen> {
               child: const Text('EN'),
               //color: Colors.green,
             ),
-          ]
-          ),
-          ),
-          ),
+   ],
+                    ),
+                  ),
+                ),
+              );
+            }
+          },
+        ),
       ),
     );
-
   }
 void _submitForm() {
-  if (_formKey.currentState!.validate()) {
-    _formKey.currentState!.save();
-    _showDialog(name: _nameController.text);
-    log('Name: ${_nameController.text}');
-    log('Phone: ${_phoneController.text}');
-    log('Email: ${_emailController.text}');
-    log('Country: $_selectedCountry');
-    log('Story: ${_storyController.text}');
-  } else {
-    _showMessage(message: 'Form is not valid! Please review and correct');
-  }
+  final name = _nameController.text;
+  final phone = _phoneController.text;
+  final email = _emailController.text;
+  final country = _selectedCountry;
+  final story = _storyController.text;
+
+  final newUser = User()
+    ..name = name
+    ..phone = phone
+    ..email = email
+    ..country = country
+    ..story = story;
+
+  context.read<RegisterCubit>().register();
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => UserScreen(user: newUser,),
+    ),
+  );
 }
 
   String? validateName(String? value) {
